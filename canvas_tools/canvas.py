@@ -1,8 +1,8 @@
 import os
 import json
-from canvasapi import Canvas
 from icalendar import Calendar, Event
 import click
+import requests
 
 CONFIG_FILE = "canvas_config.json"
 
@@ -16,6 +16,26 @@ def load_config():
 def save_config(config):
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=4)
+
+def fetch_all_pages(url, headers, params=None):
+    all_results = []
+    page = 1
+    per_page = 50
+
+    while True:
+        if params is None:
+            params = {}
+        params.update({"page": page, "per_page": per_page})
+        response = requests.get(url, headers=headers, params=params)
+        results = response.json()
+
+        if not results:
+            break
+
+        all_results.extend(results)
+        page += 1
+
+    return all_results
 
 @click.group()
 def main():
@@ -42,26 +62,40 @@ def fetch():
 @click.option("-e", "--export", is_flag=True, help="Export assignments to an .ics file")
 def fetch_assignments(course_id, export):
     config = load_config()
-    canvas = Canvas(config["domain"], config["api_key"])
-    courses = canvas.get_courses(enrollment_term_id="current")
-    
+
+    headers = {
+        "Authorization": f"Bearer {config['api_key']}"
+    }
+
+    url_courses = f"{config['domain']}/api/v1/courses"
+    response_courses = requests.get(url_courses, headers=headers)
+    courses = response_courses.json()
+
     if export:
         cal = Calendar()
-    
-    for course in courses:
-        if not course_id or course.id in course_id:
-            assignments = course.get_assignments()
-            click.echo(f"\n{course.attributes['name']}:")
 
-            for assignment in assignments:
-                click.echo(f"{assignment.name} - Due: {assignment.due_at}")
+    for course in courses:
+        if 'name' not in course:
+            continue
+
+        current_course_id = course["id"]
+        course_name = course["name"]
+
+        if not course_id or current_course_id in course_id:
+            url_assignments = f"{config['domain']}/api/v1/courses/{current_course_id}/assignments"
+            course_assignments = fetch_all_pages(url_assignments, headers)
+
+            click.echo(f"\n{course_name}:")
+
+            for assignment in course_assignments:
+                click.echo(f"{assignment['name']} - Due: {assignment['due_at']}")
 
                 if export:
                     event = Event()
-                    event.add("summary", f"{course.attributes['name']}: {assignment.name}")
-                    event.add("dtstart", assignment.due_at)
+                    event.add("summary", f"{course_name}: {assignment['name']}")
+                    event.add("dtstart", assignment['due_at'])
                     cal.add_component(event)
-    
+
     if export:
         with open("canvas_assignments.ics", "wb") as f:
             f.write(cal.to_ical())
@@ -72,26 +106,38 @@ def fetch_assignments(course_id, export):
 @click.option("-e", "--export", is_flag=True, help="Export grades to a .csv file")
 def fetch_grades(course_id, export):
     config = load_config()
-    canvas = Canvas(config["domain"], config["api_key"])
-    courses = canvas.get_courses(enrollment_term_id="current")
+    headers = {
+        "Authorization": f"Bearer {config['api_key']}"
+    }
+
+    url_courses = f"{config['domain']}/api/v1/courses"
+    response_courses = requests.get(url_courses, headers=headers)
+    courses = response_courses.json()
+
     grades = []
 
     for course in courses:
-        if not course_id or course.id in course_id:
-            assignments = course.get_assignments()
-            click.echo(f"\n{course.attributes['name']}:")
+        if not course_id or current_course_id in course_id:
+            course_name = course.get("name", "No name")
+            current_course_id = course["id"]
+            url_assignments = f"{config['domain']}/api/v1/courses/{current_course_id}/assignments"
+            course_assignments = fetch_all_pages(url_assignments, headers)
 
-            for assignment in assignments:
-                submission = assignment.get_submission(canvas.get_user("self"))
+            click.echo(f"\n{course_name}:")
+
+            for assignment in course_assignments:
+                url_submission = f"{config['domain']}/api/v1/courses/{course_id}/assignments/{assignment['id']}/submissions/self"
+                response_submission = requests.get(url_submission, headers=headers)
+                submission = response_submission.json()
                 score = submission.get("score", "Not graded yet")
-                click.echo(f"{assignment.name} - Score: {score}")
+                click.echo(f"{assignment['name']} - Score: {score}")
 
                 if export:
                     grades.append({
-                        "course_id": course.id,
-                        "course_name": course.attributes['name'],
-                        "assignment_id": assignment.id,
-                        "assignment_name": assignment.name,
+                        "course_id": course_id,
+                        "course_name": course_name,
+                        "assignment_id": assignment['id'],
+                        "assignment_name": assignment['name'],
                         "score": score
                     })
 
@@ -106,4 +152,3 @@ def fetch_grades(course_id, export):
 
 if __name__ == "__main__":
     main()
-
