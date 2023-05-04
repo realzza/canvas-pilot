@@ -1,4 +1,3 @@
-```
 # Canvas CLI
 
 A command-line tool for managing your Canvas courses, fetching assignments, and grades.
