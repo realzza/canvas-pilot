@@ -10,11 +10,15 @@ CONFIG_FILE = "canvas_config.json"
 
 
 def load_config():
-    with open(CONFIG_FILE, "r") as f:
-        config = json.load(f)
-    if not config["domain"].startswith("https://"):
-        config["domain"] = "https://" + config["domain"]
-    return config
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            config = json.load(f)
+        if not config["domain"].startswith("https://"):
+            config["domain"] = "https://" + config["domain"]
+        return config
+    except FileNotFoundError:
+        click.echo("Configuration file not found. Please run 'canvas configure' first.")
+        exit(1)
 
 
 def save_config(config):
@@ -70,7 +74,7 @@ def fetch():
 
 
 @fetch.command("assignments")
-@click.argument("course_id", nargs=-1, type=int)
+@click.argument("course_id", nargs=-1, type=str)
 @click.option("-e", "--export", is_flag=True, help="Export assignments to an .ics file")
 def fetch_assignments(course_id, export):
     config = load_config()
@@ -91,7 +95,7 @@ def fetch_assignments(course_id, export):
         current_course_id = course["id"]
         course_name = course["name"]
 
-        if not course_id or current_course_id in course_id:
+        if not course_id or str(current_course_id) in ",".join(course_id).split(","):
             url_assignments = (
                 f"{config['domain']}/api/v1/courses/{current_course_id}/assignments"
             )
@@ -123,7 +127,7 @@ def fetch_assignments(course_id, export):
 
 
 @fetch.command("grades")
-@click.argument("course_id", nargs=-1, type=int)
+@click.argument("course_id", nargs=-1, type=str)
 @click.option("-e", "--export", is_flag=True, help="Export grades to a .csv file")
 def fetch_grades(course_id, export):
     config = load_config()
@@ -137,7 +141,7 @@ def fetch_grades(course_id, export):
 
     for course in courses:
         current_course_id = course["id"]
-        if not course_id or current_course_id in course_id:
+        if not course_id or str(current_course_id) in ",".join(course_id).split(","):
             course_name = course.get("name", "No name")
             url_assignments = (
                 f"{config['domain']}/api/v1/courses/{current_course_id}/assignments"
