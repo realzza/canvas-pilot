@@ -40,7 +40,7 @@ To fetch assignments for a specific course, provide the course ID:
 canvas fetch assignments <course_id>
 ```
 
-To export the assignments to an `.ics` file, add the `-e` or `--export` flag:
+To export the assignments/exams deadlines to an `.ics` file, add the `-e` or `--export` flag:
 
 ```bash
 canvas fetch assignments --export
