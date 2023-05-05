@@ -1,4 +1,4 @@
-# Canvas CLI
+# Canvas Pilot
 
 A command-line tool for managing your Canvas courses, fetching assignments, and grades.
 
@@ -7,7 +7,7 @@ A command-line tool for managing your Canvas courses, fetching assignments, and 
 To install the Canvas CLI, run the following command:
 
 ```bash
-pip install canvas-cli
+pip install canvas-pilot
 ```
 
 ## Configuration
