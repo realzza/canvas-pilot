@@ -80,6 +80,4 @@ Contributions are welcome! If you find a bug, have a feature request, or want to
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-```
-
+This project is licensed under the GPLv3+ License. See the [LICENSE](LICENSE) file for details.
