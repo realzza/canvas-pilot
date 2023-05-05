@@ -155,7 +155,8 @@ def fetch_grades(course_id, export):
                 response_submission = requests.get(url_submission, headers=headers)
                 submission = response_submission.json()
                 score = submission.get("score", "Not graded yet")
-                click.echo(f"{assignment['name']} - Score: {score}")
+                total_score = assignment.get("points_possible", "N/A")
+                click.echo(f"{assignment['name']} - Score: {score} / {total_score}")
 
                 if export:
                     grades.append(
@@ -164,7 +165,7 @@ def fetch_grades(course_id, export):
                             "course_name": course_name,
                             "assignment_id": assignment["id"],
                             "assignment_name": assignment["name"],
-                            "score": score,
+                            "score": f"{score} / {total_score}",
                         }
                     )
 
