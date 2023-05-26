@@ -1,5 +1,11 @@
 # Canvas Pilot
 
+![PyPI](https://img.shields.io/pypi/v/canvas_pilot?color=df)&nbsp;
+![GitHub](https://img.shields.io/github/license/realzza/canvas-pilot?color=%23FFB6C1)&nbsp;
+![GitHub last commit](https://img.shields.io/github/last-commit/realzza/canvas-pilot?color=orange)&nbsp;
+[![CodeFactor](https://www.codefactor.io/repository/github/realzza/canvas-pilot/badge)](https://www.codefactor.io/repository/github/realzza/canvas-pilot)&nbsp;
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/canvas-pilot)
+
 A command-line tool for managing your Canvas courses, fetching assignments, and grades.
 
 ## Installation
@@ -12,19 +18,43 @@ pip install canvas-pilot
 
 ## Configuration
 
-Before using the Canvas CLI, you'll need to configure it with your Canvas API key and domain. To do this, run the following command and follow the prompts:
+Before using the Canvas CLI, you'll need to configure it with your Canvas API key and domain.
+
+### Retrieving your Canvas API Key
+
+To retrieve your Canvas API key, follow these steps:
+
+1. Log in to your Canvas account.
+2. Click on "Account" in the left-hand side menu.
+3. Click on "Settings" from the dropdown.
+4. Scroll down to the "Approved Integrations" section and click on "+ New Access Token".
+5. In the pop-up window, optionally enter a purpose for the token and set its expiry date.
+6. Click on "Generate Token".
+7. Copy the token displayed in the "Token" field. This is your Canvas API key.
+
+**Important:** Keep your API key safe and secure, like you would with a password. Don't share it with anyone.
+
+### Getting your Canvas Domain
+
+Your Canvas domain is the URL you use to access Canvas. For example, if you access Canvas by navigating to `https://canvas.<yourinstitution>.com`, then your Canvas domain is `canvas.<yourinstitution>.com`.
+
+Once you have your API key and domain, run the following command and follow the prompts to configure the Canvas CLI:
 
 ```bash
 canvas configure
 ```
 
-You can reconfigure the Canvas API key and domain at any time by running:
-
-```bash
-canvas reconfigure
-```
+You can reconfigure the Canvas API key and domain at any time by running `canvas configure` again. You will be prompted to update your keys.
 
 ## Usage
+
+### Fetch Courses
+
+To fetch the list of your Canvas courses, run:
+
+```bash
+canvas fetch courses
+```
 
 ### Fetch Assignments
 
