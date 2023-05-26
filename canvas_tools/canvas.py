@@ -1,8 +1,11 @@
 import json
+import operator
 import os
+from collections import defaultdict
 from datetime import datetime
 
 import click
+import getpass4
 import requests
 from icalendar import Calendar, Event
 
@@ -47,25 +50,38 @@ def fetch_all_pages(url, headers, params=None):
     return all_results
 
 
+def parse_semester(start_date, end_date):
+    start_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+    end_date = datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%SZ")
+
+    if start_date.month <= 5 and end_date.month <= 5:
+        return f"Spring {start_date.year}"
+    elif start_date.month >= 8 and end_date.month >= 8:
+        return f"Fall {start_date.year}"
+    else:
+        return f"Summer {start_date.year}"
+
+
 @click.group()
 def main():
     pass
 
 
 @main.command("configure")
-@click.option("--api_key", prompt="Canvas API key")
-@click.option(
-    "--domain", prompt="Canvas domain (e.g., yourinstitution.instructure.com)"
-)
-def configure(api_key, domain):
-    config = {"api_key": api_key, "domain": domain}
-    save_config(config)
-    click.echo("Configuration saved.")
-
-
-@main.command("reconfigure")
-def reconfigure():
-    configure()
+def configure():
+    if os.path.exists(CONFIG_FILE):
+        if click.confirm("Configuration already exists. Do you want to overwrite it?"):
+            api_key = getpass4.getpass("Canvas API key: ")
+            domain = click.prompt("Canvas domain (e.g., canvas.<yourinstitution>.com)")
+            config = {"api_key": api_key, "domain": domain}
+            save_config(config)
+            click.echo("Configuration saved.")
+    else:
+        api_key = getpass4.getpass("Canvas API key: ")
+        domain = click.prompt("Canvas domain (e.g., canvas.<yourinstitution>.com)")
+        config = {"api_key": api_key, "domain": domain}
+        save_config(config)
+        click.echo("Configuration saved.")
 
 
 @main.group("fetch")
@@ -124,6 +140,37 @@ def fetch_assignments(course_id, export):
         with open("canvas_assignments.ics", "wb") as f:
             f.write(cal.to_ical())
         click.echo("Assignments exported to canvas_assignments.ics")
+
+
+@fetch.command("courses")
+def fetch_courses():
+    config = load_config()
+
+    headers = {"Authorization": f"Bearer {config['api_key']}"}
+
+    url_courses = f"{config['domain']}/api/v1/courses?enrollment_type=student&enrollment_state=active"
+    courses = fetch_all_pages(url_courses, headers)
+
+    semester_courses = defaultdict(list)
+    for course in courses:
+        if "name" in course:
+            if (
+                "start_at" in course
+                and "end_at" in course
+                and course["start_at"]
+                and course["end_at"]
+            ):
+                semester = parse_semester(course["start_at"], course["end_at"])
+            else:
+                semester = "No Semester"
+            semester_courses[semester].append((course["id"], course["name"]))
+
+    for semester, courses in sorted(
+        semester_courses.items(), key=operator.itemgetter(0), reverse=True
+    ):
+        click.echo(f"\n{semester}:")
+        for course_id, course_name in courses:
+            click.echo(f"- Course ID: {course_id}, Course Name: {course_name}")
 
 
 @fetch.command("grades")
